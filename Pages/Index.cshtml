@@ -1,0 +1,199 @@
+﻿@page
+@model IndexModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Collaborative Markdown Diagrams";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .welcome-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        .welcome-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            background: #f0f0f0;
+        }
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.875rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .room-code {
+            display: none;
+            background: #e8f5e9;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 2px solid #4caf50;
+        }
+        .room-code.show {
+            display: block;
+        }
+        .code-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2e7d32;
+            letter-spacing: 0.2rem;
+            margin: 1rem 0;
+        }
+        .logout {
+            float: right;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .logout:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/logout" class="logout">Logout</a>
+        <h1>📝 Collaborative Markdown Editor</h1>
+        <p>Write markdown documents together in real-time with embedded Mermaid diagrams</p>
+    </div>
+
+    <div class="container">
+        <div class="welcome-section">
+            <h2>Welcome to Markdown Collab</h2>
+            <p>Create or join a markdown document room to collaborate with others in real-time. Write in markdown and embed Mermaid diagrams!</p>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="createRoom()">Create New Document Room</button>
+            </div>
+
+            <div class="room-code" id="roomCodeDisplay">
+                <h3>Room Created Successfully!</h3>
+                <div class="code-display" id="newRoomCode"></div>
+                <p>Share this code with others to collaborate. Click below to enter the room.</p>
+                <button class="btn btn-primary" onclick="enterNewRoom()">Enter Room</button>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h3>Join Existing Room</h3>
+                <div class="input-group">
+                    <input type="text" id="roomCodeInput" placeholder="Enter room code" />
+                    <button class="btn btn-secondary" onclick="joinRoom()">Join Room</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let createdRoomCode = '';
+
+        async function createRoom() {
+            try {
+                const response = await fetch('/api/rooms/create', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                createdRoomCode = data.roomCode;
+                document.getElementById('newRoomCode').textContent = data.roomCode;
+                document.getElementById('roomCodeDisplay').classList.add('show');
+            } catch (error) {
+                alert('Error creating room: ' + error.message);
+            }
+        }
+
+        function enterNewRoom() {
+            window.location.href = '/room/' + createdRoomCode;
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+            if (code) {
+                window.location.href = '/room/' + code;
+            }
+        }
+
+        document.getElementById('roomCodeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                joinRoom();
+            }
+        });
+    </script>
+</body>
+</html>

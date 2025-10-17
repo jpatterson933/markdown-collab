@@ -1,0 +1,359 @@
+@page "/room/{code}"
+@model MarkdownCollab.Pages.RoomModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Room " + Model.RoomCode;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        window.mermaid = mermaid;
+        window.mermaidReady = true;
+        window.dispatchEvent(new Event('mermaidLoaded'));
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.25rem;
+        }
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .room-code-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            letter-spacing: 0.1rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+        }
+        .panel-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            color: #333;
+        }
+        #editor {
+            flex: 1;
+            padding: 1rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            border: none;
+            resize: none;
+            outline: none;
+        }
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .preview-content {
+            flex: 1;
+            padding: 2rem;
+            overflow: auto;
+        }
+        #preview {
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #333;
+        }
+        #preview h1 {
+            font-size: 2rem;
+            margin: 1.5rem 0 1rem;
+            color: #2c3e50;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        #preview h2 {
+            font-size: 1.5rem;
+            margin: 1.25rem 0 0.75rem;
+            color: #34495e;
+        }
+        #preview h3 {
+            font-size: 1.25rem;
+            margin: 1rem 0 0.5rem;
+            color: #34495e;
+        }
+        #preview p {
+            margin: 0.75rem 0;
+        }
+        #preview ul, #preview ol {
+            margin: 0.75rem 0;
+            padding-left: 2rem;
+        }
+        #preview li {
+            margin: 0.25rem 0;
+        }
+        #preview code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        #preview pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        #preview pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        #preview blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #666;
+            font-style: italic;
+        }
+        #preview a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        #preview a:hover {
+            text-decoration: underline;
+        }
+        #preview strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        #preview table th,
+        #preview table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        #preview table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .status {
+            padding: 0.5rem 1rem;
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 0.85rem;
+        }
+        .status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .error-message {
+            color: #dc3545;
+            padding: 1rem;
+            background: #ffe0e0;
+            margin: 1rem;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Collaborative Markdown - Room <span class="room-code-badge">@Model.RoomCode</span></h1>
+        <div class="header-actions">
+            <div class="status" id="status">Connected</div>
+            <button class="btn btn-danger" onclick="resetDocument()">Reset Document</button>
+            <a href="/" class="btn btn-secondary">Leave Room</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="editor-panel">
+            <div class="panel-header">📝 Markdown Editor</div>
+            <textarea id="editor" placeholder="Write markdown here... Use ```mermaid blocks for diagrams"></textarea>
+        </div>
+        <div class="preview-panel">
+            <div class="panel-header">👁️ Live Preview</div>
+            <div class="preview-content">
+                <div id="preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const roomCode = '@Model.RoomCode';
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/diagramhub")
+            .withAutomaticReconnect()
+            .build();
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        let isUpdating = false;
+
+        connection.on("LoadDiagram", function (content) {
+            editor.value = content;
+            renderMarkdown(content);
+        });
+
+        connection.on("DiagramUpdated", function (content) {
+            if (!isUpdating) {
+                editor.value = content;
+                renderMarkdown(content);
+            }
+        });
+
+        connection.onreconnecting(() => {
+            status.textContent = 'Reconnecting...';
+            status.classList.add('disconnected');
+        });
+
+        connection.onreconnected(() => {
+            status.textContent = 'Connected';
+            status.classList.remove('disconnected');
+        });
+
+        connection.onclose(() => {
+            status.textContent = 'Disconnected';
+            status.classList.add('disconnected');
+        });
+
+        async function start() {
+            try {
+                await connection.start();
+                await connection.invoke("JoinRoom", roomCode);
+                status.textContent = 'Connected';
+                status.classList.remove('disconnected');
+            } catch (err) {
+                console.error(err);
+                setTimeout(start, 5000);
+            }
+        }
+
+        let debounceTimer;
+        editor.addEventListener('input', function() {
+            isUpdating = true;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const content = editor.value;
+                await connection.invoke("UpdateDiagram", roomCode, content);
+                renderMarkdown(content);
+                isUpdating = false;
+            }, 500);
+        });
+
+        async function renderMarkdown(content) {
+            try {
+                if (!window.mermaid) {
+                    await waitForMermaid();
+                }
+
+                const html = marked.parse(content);
+                preview.innerHTML = html;
+
+                const mermaidBlocks = preview.querySelectorAll('code.language-mermaid');
+                for (const block of mermaidBlocks) {
+                    const mermaidCode = block.textContent;
+                    const pre = block.parentElement;
+                    const mermaidDiv = document.createElement('div');
+                    mermaidDiv.className = 'mermaid';
+                    mermaidDiv.textContent = mermaidCode;
+                    pre.replaceWith(mermaidDiv);
+                }
+
+                if (mermaidBlocks.length > 0) {
+                    await window.mermaid.run({ nodes: preview.querySelectorAll('.mermaid') });
+                }
+            } catch (error) {
+                preview.innerHTML = '<div class="error-message">Error rendering content: ' + error.message + '</div>';
+            }
+        }
+
+        function waitForMermaid() {
+            return new Promise((resolve) => {
+                if (window.mermaidReady) {
+                    resolve();
+                } else {
+                    window.addEventListener('mermaidLoaded', resolve, { once: true });
+                }
+            });
+        }
+
+        async function resetDocument() {
+            if (confirm('Are you sure you want to reset this document? This will affect all users.')) {
+                await connection.invoke("ResetDiagram", roomCode);
+            }
+        }
+
+        waitForMermaid().then(() => start());
+    </script>
+</body>
+</html>
