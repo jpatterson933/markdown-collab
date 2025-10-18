@@ -41,6 +41,7 @@ graph TD
 
 ## Try it out!
 Start editing this document and see changes sync across all connected users.";
+        public const int MaxContentLength = 1_000_000;
     }
 
     public static class RoomCode

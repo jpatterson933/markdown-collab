@@ -11,6 +11,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
+    @Html.AntiForgeryToken()
     <style>
         * {
             margin: 0;
@@ -165,8 +166,12 @@
 
         async function createRoom() {
             try {
+                const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
                 const response = await fetch('/api/rooms/create', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': antiForgeryToken
+                    }
                 });
                 const data = await response.json();
 

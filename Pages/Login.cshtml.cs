@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using MarkdownCollab.Common;
+using System.Security.Cryptography;
 
 namespace MarkdownCollab.Pages;
 
@@ -19,10 +20,12 @@ public class LoginModel : PageModel
     {
     }
 
+    [ValidateAntiForgeryToken]
     public IActionResult OnPost(string password)
     {
         if (PasswordIsValid(password))
         {
+            RegenerateSessionIdentifier();
             MarkUserAsAuthenticated();
             return RedirectToHomePage();
         }
@@ -31,10 +34,52 @@ public class LoginModel : PageModel
         return Page();
     }
 
+    private void RegenerateSessionIdentifier()
+    {
+        var existingSessionData = ExtractExistingSessionData();
+        HttpContext.Session.Clear();
+        RestoreSessionData(existingSessionData);
+    }
+
+    private Dictionary<string, string> ExtractExistingSessionData()
+    {
+        var sessionData = new Dictionary<string, string>();
+        foreach (var key in HttpContext.Session.Keys)
+        {
+            var value = HttpContext.Session.GetString(key);
+            if (value != null)
+            {
+                sessionData[key] = value;
+            }
+        }
+        return sessionData;
+    }
+
+    private void RestoreSessionData(Dictionary<string, string> sessionData)
+    {
+        foreach (var kvp in sessionData)
+        {
+            HttpContext.Session.SetString(kvp.Key, kvp.Value);
+        }
+    }
+
     private bool PasswordIsValid(string providedPassword)
     {
         var expectedPassword = GetExpectedPassword();
-        return providedPassword == expectedPassword;
+        return PasswordsMatchInConstantTime(providedPassword, expectedPassword);
+    }
+
+    private static bool PasswordsMatchInConstantTime(string providedPassword, string expectedPassword)
+    {
+        if (providedPassword == null || expectedPassword == null)
+        {
+            return false;
+        }
+
+        var providedBytes = System.Text.Encoding.UTF8.GetBytes(providedPassword);
+        var expectedBytes = System.Text.Encoding.UTF8.GetBytes(expectedPassword);
+
+        return CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 
     private string GetExpectedPassword()

@@ -15,9 +15,10 @@ public class RoomsController : ControllerBase
     }
 
     [HttpPost("create")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create()
     {
         var room = await _roomService.CreateRoomAsync();
-        return Ok(new { roomCode = room.RoomCode });
+        return Ok(new { RoomCode = room.RoomCode });
     }
 }

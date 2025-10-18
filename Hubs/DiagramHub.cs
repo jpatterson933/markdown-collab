@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using MarkdownCollab.Common;
 using MarkdownCollab.Services;
+using MarkdownCollab.Models;
 
 namespace MarkdownCollab.Hubs;
 
@@ -15,12 +16,22 @@ public class DiagramHub : Hub
 
     public async Task JoinRoom(string roomCode)
     {
+        if (RoomCodeIsInvalid(roomCode))
+        {
+            return;
+        }
+
         await AddCurrentUserToRoomGroup(roomCode);
         await SendCurrentDiagramToUser(roomCode);
     }
 
     public async Task UpdateDiagram(string roomCode, string content)
     {
+        if (RoomCodeIsInvalid(roomCode) || ContentExceedsMaximumLength(content))
+        {
+            return;
+        }
+
         var wasUpdated = await _roomService.UpdateDiagramAsync(roomCode, content);
 
         if (wasUpdated)
@@ -31,6 +42,11 @@ public class DiagramHub : Hub
 
     public async Task ResetDiagram(string roomCode)
     {
+        if (RoomCodeIsInvalid(roomCode))
+        {
+            return;
+        }
+
         var wasReset = await _roomService.ResetDiagramAsync(roomCode);
 
         if (wasReset)
@@ -69,8 +85,28 @@ public class DiagramHub : Hub
         }
     }
 
-    private static bool RoomExists(object? room)
+    private static bool RoomExists(DiagramRoom? room)
     {
         return room != null;
+    }
+
+    private static bool ContentExceedsMaximumLength(string content)
+    {
+        return content?.Length > ApplicationConstants.Diagrams.MaxContentLength;
+    }
+
+    private static bool RoomCodeIsInvalid(string roomCode)
+    {
+        if (string.IsNullOrEmpty(roomCode))
+        {
+            return true;
+        }
+
+        if (roomCode.Length > ApplicationConstants.RoomCode.MaxLength)
+        {
+            return true;
+        }
+
+        return roomCode.Any(character => !ApplicationConstants.RoomCode.AllowedCharacters.Contains(character));
     }
 }
