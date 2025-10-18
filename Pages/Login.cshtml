@@ -88,6 +88,7 @@
         <h1>🔒 Markdown Collab</h1>
         <p class="subtitle">Enter password to access the collaborative diagram editor</p>
         <form method="post">
+            @Html.AntiForgeryToken()
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required autofocus />

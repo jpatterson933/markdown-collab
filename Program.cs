@@ -4,6 +4,7 @@ using MarkdownCollab.Data;
 using MarkdownCollab.Services;
 using MarkdownCollab.Hubs;
 using MarkdownCollab.Middleware;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,10 +22,48 @@ app.Run();
 static void ConfigureServices(WebApplicationBuilder builder)
 {
     builder.Services.AddRazorPages();
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+    });
     builder.Services.AddSignalR();
     ConfigureSessionSupport(builder.Services);
+    ConfigureRateLimiting(builder.Services, builder.Configuration);
     builder.Services.AddScoped<RoomService>();
+}
+
+static void ConfigureRateLimiting(IServiceCollection services, IConfiguration configuration)
+{
+    services.AddMemoryCache();
+    services.Configure<IpRateLimitOptions>(options =>
+    {
+        options.EnableEndpointRateLimiting = true;
+        options.StackBlockedRequests = false;
+        options.RealIpHeader = "X-Real-IP";
+        options.ClientIdHeader = "X-ClientId";
+        options.GeneralRules = CreateRateLimitRules();
+    });
+    services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+    services.AddInMemoryRateLimiting();
+}
+
+static List<RateLimitRule> CreateRateLimitRules()
+{
+    return new List<RateLimitRule>
+    {
+        new RateLimitRule
+        {
+            Endpoint = "POST:/login",
+            Period = "1m",
+            Limit = 5
+        },
+        new RateLimitRule
+        {
+            Endpoint = "POST:/api/rooms/create",
+            Period = "1m",
+            Limit = 10
+        }
+    };
 }
 
 static void ConfigureSessionSupport(IServiceCollection services)
@@ -124,6 +163,7 @@ static void ConfigureMiddleware(WebApplication app)
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
+    app.UseIpRateLimiting();
     app.UseSession();
     app.UsePasswordProtection();
     app.UseAuthorization();
