@@ -99,7 +99,7 @@ static string? GetConnectionString(IConfiguration configuration)
     Console.WriteLine($"[DB CONFIG] Connection string from config: {(configConnectionString != null ? "Found" : "Not found")}");
     Console.WriteLine($"[DB CONFIG] Connection string from env: {(envConnectionString != null ? "Found" : "Not found")}");
 
-    var result = configConnectionString ?? envConnectionString;
+    var result = envConnectionString ?? configConnectionString;
     if (result != null)
     {
         var maskedResult = result.Length > 20 ? result.Substring(0, 20) + "..." : result;
