@@ -63,6 +63,7 @@ Start editing this document and see changes sync across all connected users.";
         public const string DefaultConnectionKey = "DefaultConnection";
         public const string EnvironmentVariableName = "DATABASE_URL";
         public const string PostgresUrlPrefix = "postgres://";
+        public const string PostgresqlUrlPrefix = "postgresql://";
         public const string InMemoryDatabaseName = "MarkdownCollab";
     }
 
