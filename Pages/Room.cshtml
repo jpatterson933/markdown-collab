@@ -249,7 +249,7 @@
     </div>
 
     <script>
-        const roomCode = '@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RoomCode))';
+        const roomCode = '@Model.RoomCode';
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/diagramhub")
             .withAutomaticReconnect()
