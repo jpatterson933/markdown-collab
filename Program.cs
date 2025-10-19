@@ -111,7 +111,8 @@ static void ConfigurePostgresDatabase(IServiceCollection services, string connec
 
 static string ConvertToNpgsqlFormatIfNeeded(string connectionString)
 {
-    if (!connectionString.StartsWith(ApplicationConstants.Database.PostgresUrlPrefix))
+    if (!connectionString.StartsWith(ApplicationConstants.Database.PostgresUrlPrefix) &&
+        !connectionString.StartsWith(ApplicationConstants.Database.PostgresqlUrlPrefix))
     {
         return connectionString;
     }
