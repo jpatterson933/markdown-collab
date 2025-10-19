@@ -93,8 +93,24 @@ static void ConfigureDatabase(WebApplicationBuilder builder)
 
 static string? GetConnectionString(IConfiguration configuration)
 {
-    return configuration.GetConnectionString(ApplicationConstants.Database.DefaultConnectionKey)
-        ?? Environment.GetEnvironmentVariable(ApplicationConstants.Database.EnvironmentVariableName);
+    var configConnectionString = configuration.GetConnectionString(ApplicationConstants.Database.DefaultConnectionKey);
+    var envConnectionString = Environment.GetEnvironmentVariable(ApplicationConstants.Database.EnvironmentVariableName);
+
+    Console.WriteLine($"[DB CONFIG] Connection string from config: {(configConnectionString != null ? "Found" : "Not found")}");
+    Console.WriteLine($"[DB CONFIG] Connection string from env: {(envConnectionString != null ? "Found" : "Not found")}");
+
+    var result = configConnectionString ?? envConnectionString;
+    if (result != null)
+    {
+        var maskedResult = result.Length > 20 ? result.Substring(0, 20) + "..." : result;
+        Console.WriteLine($"[DB CONFIG] Using connection string starting with: {maskedResult}");
+    }
+    else
+    {
+        Console.WriteLine("[DB CONFIG] No connection string found - will use in-memory database");
+    }
+
+    return result;
 }
 
 static bool HasValidConnectionString(string? connectionString)
