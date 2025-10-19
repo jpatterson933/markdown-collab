@@ -16,13 +16,30 @@ public class DiagramHub : Hub
 
     public async Task JoinRoom(string roomCode)
     {
-        if (RoomCodeIsInvalid(roomCode))
+        try
         {
-            return;
-        }
+            Console.WriteLine($"JoinRoom called with roomCode: {roomCode}");
 
-        await AddCurrentUserToRoomGroup(roomCode);
-        await SendCurrentDiagramToUser(roomCode);
+            if (RoomCodeIsInvalid(roomCode))
+            {
+                Console.WriteLine($"Room code invalid: {roomCode}");
+                return;
+            }
+
+            Console.WriteLine($"Adding user to group: {roomCode}");
+            await AddCurrentUserToRoomGroup(roomCode);
+
+            Console.WriteLine($"Sending diagram to user for room: {roomCode}");
+            await SendCurrentDiagramToUser(roomCode);
+
+            Console.WriteLine($"JoinRoom completed for: {roomCode}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR in JoinRoom: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
     }
 
     public async Task UpdateDiagram(string roomCode, string content)
@@ -62,11 +79,18 @@ public class DiagramHub : Hub
 
     private async Task SendCurrentDiagramToUser(string roomCode)
     {
+        Console.WriteLine($"Getting room from database: {roomCode}");
         var room = await _roomService.GetRoomAsync(roomCode);
 
         if (RoomExists(room))
         {
+            Console.WriteLine($"Room found, sending diagram content. Length: {room!.DiagramContent.Length}");
             await Clients.Caller.SendAsync(ApplicationConstants.SignalR.LoadDiagram, room!.DiagramContent);
+            Console.WriteLine($"LoadDiagram message sent");
+        }
+        else
+        {
+            Console.WriteLine($"Room NOT found in database: {roomCode}");
         }
     }
 
